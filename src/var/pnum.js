@@ -1,3 +1,5 @@
-define(function() {
-	return (/[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/).source;
+define([
+	"./rnum"
+], function( rnum ) {
+	return rnum.source.replace( /\(/g, "(?:" );
 });

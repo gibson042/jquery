@@ -121,9 +121,9 @@ jQuery.extend({
 
 		// add listeners to Deferred subordinates; treat others as resolved
 		if ( length > 1 ) {
-			progressValues = new Array( length );
-			progressContexts = new Array( length );
-			resolveContexts = new Array( length );
+			progressValues = Array( length );
+			progressContexts = Array( length );
+			resolveContexts = Array( length );
 			for ( ; i < length; i++ ) {
 				if ( resolveValues[ i ] && jQuery.isFunction( resolveValues[ i ].promise ) ) {
 					resolveValues[ i ].promise()

@@ -1,6 +1,8 @@
 define([
 	"./core",
+	"./var/rnum",
 	"./var/pnum",
+	"./toDecimal",
 	"./core/access",
 	"./css/var/rmargin",
 	"./css/var/rnumnonpx",
@@ -15,7 +17,7 @@ define([
 	"./css/swap",
 	"./core/ready",
 	"./selector" // contains
-], function( jQuery, pnum, access, rmargin, rnumnonpx, cssExpand, isHidden,
+], function( jQuery, rnum, pnum, toDecimal, access, rmargin, rnumnonpx, cssExpand, isHidden,
 	curCSS, defaultDisplay, addGetHookIf, support ) {
 
 var
@@ -278,9 +280,10 @@ jQuery.extend({
 				return;
 			}
 
-			// If a number was passed in, add 'px' to the (except for certain CSS properties)
+			// If a number was passed in, assume 'px' unit (except for certain CSS properties)
 			if ( type === "number" && !jQuery.cssNumber[ origName ] ) {
-				value += "px";
+				// Make sure value is not expressed in exponential notation
+				value = ( value + "px" ).replace( rnum, toDecimal );
 			}
 
 			// Fixes #8908, it can be done more correctly by specifing setters in cssHooks,

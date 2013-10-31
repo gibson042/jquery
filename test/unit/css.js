@@ -3,7 +3,7 @@ if ( jQuery.css ) {
 module("css", { teardown: moduleTeardown });
 
 test("css(String|Hash)", function() {
-	expect( 43 );
+	expect( 45 );
 
 	equal( jQuery("#qunit-fixture").css("display"), "block", "Check for css property \"display\"" );
 
@@ -117,6 +117,14 @@ test("css(String|Hash)", function() {
 	div = jQuery( "<div/>" ).css({ position: "absolute", "z-index": 1000 }).appendTo( "#qunit-fixture" );
 	strictEqual( div.css( "z-index" ), "1000",
 		"Make sure that a string z-index is returned from css('z-index') (#14432)." );
+
+	div.css({ top: -10, left: -10, height: 5, width: 5 });
+	div.css({ left: -2e22, width: 2.718e-28 });
+	checkval = div.css([ "top", "left", "height", "width" ]);
+	ok( parseFloat( checkval.left ) < -1e6,
+		"very large negative value: " + checkval.left );
+	ok( 0 <= parseFloat( checkval.width ) && parseFloat( checkval.width ) < 0.1,
+		"very small positive value: " + checkval.width );
 });
 
 test( "css() explicit and relative values", 29, function() {
