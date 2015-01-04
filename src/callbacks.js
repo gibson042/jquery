@@ -47,17 +47,17 @@ jQuery.Callbacks = function( options ) {
 
 	var // Flag to know if list is currently firing
 		firing,
-		// Last fire value (for non-forgettable lists)
+		// Last fire value for non-forgettable lists
 		memory,
 		// Flag to know if list was already fired
 		fired,
-		// Flag to prevent .fire/.fireWith
+		// Flag to prevent firing
 		locked,
 		// Actual callback list
 		list = [],
-		// Stack of fire calls for repeatable lists
-		stack = [],
-		// Index of currently firing callback (modified by remove if needed)
+		// Queue of execution data for repeatable lists
+		queue = [],
+		// Index of currently firing callback (modified by add/remove as needed)
 		firingIndex = -1,
 		// Fire callbacks
 		fire = function() {
@@ -68,8 +68,8 @@ jQuery.Callbacks = function( options ) {
 			// Execute callbacks for all pending executions,
 			// respecting firingIndex overrides and runtime changes
 			fired = firing = true;
-			for ( ; stack.length; firingIndex = -1 ) {
-				memory = stack.shift();
+			for ( ; queue.length; firingIndex = -1 ) {
+				memory = queue.shift();
 				while ( ++firingIndex < list.length ) {
 
 					// Run callback and check for early termination
@@ -114,7 +114,7 @@ jQuery.Callbacks = function( options ) {
 					// If we have memory from a past run, we should fire after adding
 					if ( memory && !firing ) {
 						firingIndex = list.length - 1;
-						stack.push( memory );
+						queue.push( memory );
 					}
 
 					(function add( args ) {
@@ -173,7 +173,7 @@ jQuery.Callbacks = function( options ) {
 			// Abort any current/pending executions
 			// Clear all callbacks and values
 			disable: function() {
-				locked = stack = [];
+				locked = queue = [];
 				list = memory = "";
 				return this;
 			},
@@ -185,7 +185,7 @@ jQuery.Callbacks = function( options ) {
 			// Also disable .add unless we have memory (since it would have no effect)
 			// Abort any pending executions
 			lock: function() {
-				locked = stack = [];
+				locked = queue = [];
 				if ( !memory && !firing ) {
 					list = memory = "";
 				}
@@ -200,7 +200,7 @@ jQuery.Callbacks = function( options ) {
 				if ( !locked ) {
 					args = args || [];
 					args = [ context, args.slice ? args.slice() : args ];
-					stack.push( args );
+					queue.push( args );
 					if ( !firing ) {
 						fire();
 					}
