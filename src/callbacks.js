@@ -53,12 +53,10 @@ jQuery.Callbacks = function( options ) {
 		fired,
 		// Flag to prevent .fire/.fireWith
 		locked,
-		// Index of currently firing callback (modified by remove if needed)
-		firingIndex,
-		// First callback to fire (used internally by add and fireWith)
-		firingStart,
 		// Actual callback list
 		list = [],
+		// Index of currently firing callback (modified by remove if needed)
+		firingIndex = -1,
 		// Stack of fire calls for repeatable lists
 		stack = !options.once && [],
 		// Fire callbacks
@@ -66,9 +64,8 @@ jQuery.Callbacks = function( options ) {
 			locked = options.once;
 			memory = options.memory && data;
 			fired = firing = true;
-			firingIndex = firingStart || 0;
-			firingStart = 0;
-			for ( ; list && firingIndex < list.length; firingIndex++ ) {
+			firingIndex++;
+			for ( ; firingIndex < list.length; firingIndex++ ) {
 				if ( list[ firingIndex ].apply( data[ 0 ], data[ 1 ] ) === false &&
 					options.stopOnFalse ) {
 
@@ -76,6 +73,7 @@ jQuery.Callbacks = function( options ) {
 					break;
 				}
 			}
+			firingIndex = -1;
 			firing = false;
 
 			// If repeatable, check for pending execution
@@ -98,8 +96,12 @@ jQuery.Callbacks = function( options ) {
 			// Add a callback or a collection of callbacks to the list
 			add: function() {
 				if ( list ) {
-					// First, we save the current length
-					var start = list.length;
+
+					// With memory, we should fire after adding if we're not already running
+					if ( !firing && memory ) {
+						firingIndex = list.length - 1;
+					}
+
 					(function add( args ) {
 						jQuery.each( args, function( _, arg ) {
 							if ( jQuery.isFunction( arg ) ) {
@@ -113,10 +115,7 @@ jQuery.Callbacks = function( options ) {
 						});
 					})( arguments );
 
-					// With memory, if we're not firing then
-					// we should call right away
 					if ( !firing && memory ) {
-						firingStart = start;
 						fire( memory );
 					}
 				}
@@ -131,7 +130,7 @@ jQuery.Callbacks = function( options ) {
 						list.splice( index, 1 );
 
 						// Handle firing indexes
-						if ( firing && index <= firingIndex ) {
+						if ( index <= firingIndex ) {
 							firingIndex--;
 						}
 					}
