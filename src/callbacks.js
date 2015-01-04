@@ -55,51 +55,66 @@ jQuery.Callbacks = function( options ) {
 		locked,
 		// Actual callback list
 		list = [],
+		// Stack of fire calls for repeatable lists
+		stack = [],
 		// Index of currently firing callback (modified by remove if needed)
 		firingIndex = -1,
-		// Stack of fire calls for repeatable lists
-		stack = !options.once && [],
 		// Fire callbacks
-		fire = function( data ) {
-			locked = options.once;
-			memory = options.memory && data;
-			fired = firing = true;
-			firingIndex++;
-			for ( ; firingIndex < list.length; firingIndex++ ) {
-				if ( list[ firingIndex ].apply( data[ 0 ], data[ 1 ] ) === false &&
-					options.stopOnFalse ) {
+		fire = function() {
 
-					memory = false; // To prevent further calls using add
-					break;
+			// Enforce single-firing
+			locked = options.once;
+
+			// Execute callbacks for all pending executions,
+			// respecting firingIndex overrides and runtime changes
+			fired = firing = true;
+			for ( ; stack.length; firingIndex = -1 ) {
+				memory = stack.shift();
+				while ( ++firingIndex < list.length ) {
+
+					// Run callback and check for early termination
+					if ( list[ firingIndex ].apply( memory[ 0 ], memory[ 1 ] ) === false &&
+						options.stopOnFalse ) {
+
+						// Jump to end and forget the data so .add doesn't re-fire
+						firingIndex = list.length;
+						memory = false;
+					}
 				}
 			}
-			firingIndex = -1;
+
+			// Forget the data if we're done with it
+			if ( !options.memory ) {
+				memory = false;
+			}
+
 			firing = false;
 
-			// If repeatable, check for pending execution
-			if ( stack ) {
-				if ( stack.length ) {
-					fire( stack.shift() );
+			// Clean up if we're done firing for good
+			if ( locked ) {
+
+				// Keep an empty list if we have data for future add calls
+				if ( memory ) {
+					list = [];
+
+				// Otherwise, this object is spent
+				} else {
+					list = "";
 				}
-
-			// If not repeatable but with memory, clear out spent callbacks
-			} else if ( memory ) {
-				list = [];
-
-			// Else, disable
-			} else {
-				self.disable();
 			}
 		},
+
 		// Actual Callbacks object
 		self = {
+
 			// Add a callback or a collection of callbacks to the list
 			add: function() {
 				if ( list ) {
 
-					// With memory, we should fire after adding if we're not already running
-					if ( !firing && memory ) {
+					// If we have memory from a past run, we should fire after adding
+					if ( memory && !firing ) {
 						firingIndex = list.length - 1;
+						stack.push( memory );
 					}
 
 					(function add( args ) {
@@ -115,8 +130,8 @@ jQuery.Callbacks = function( options ) {
 						});
 					})( arguments );
 
-					if ( !firing && memory ) {
-						fire( memory );
+					if ( memory && !firing ) {
+						fire();
 					}
 				}
 				return this;
@@ -148,7 +163,9 @@ jQuery.Callbacks = function( options ) {
 
 			// Remove all callbacks from the list
 			empty: function() {
-				list = list && [];
+				if ( list ) {
+					list = [];
+				}
 				return this;
 			},
 
@@ -156,8 +173,8 @@ jQuery.Callbacks = function( options ) {
 			// Abort any current/pending executions
 			// Clear all callbacks and values
 			disable: function() {
-				list = memory = stack = "";
-				locked = true;
+				locked = stack = [];
+				list = memory = "";
 				return this;
 			},
 			disabled: function() {
@@ -168,10 +185,9 @@ jQuery.Callbacks = function( options ) {
 			// Also disable .add unless we have memory (since it would have no effect)
 			// Abort any pending executions
 			lock: function() {
-				stack = "";
-				locked = true;
+				locked = stack = [];
 				if ( !memory && !firing ) {
-					self.disable();
+					list = memory = "";
 				}
 				return this;
 			},
@@ -184,10 +200,9 @@ jQuery.Callbacks = function( options ) {
 				if ( !locked ) {
 					args = args || [];
 					args = [ context, args.slice ? args.slice() : args ];
-					if ( firing ) {
-						stack.push( args );
-					} else {
-						fire( args );
+					stack.push( args );
+					if ( !firing ) {
+						fire();
 					}
 				}
 				return this;
