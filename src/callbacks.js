@@ -53,8 +53,6 @@ jQuery.Callbacks = function( options ) {
 		fired,
 		// Flag to prevent .fire/.fireWith
 		locked,
-		// End of the loop when firing
-		firingLength,
 		// Index of currently firing callback (modified by remove if needed)
 		firingIndex,
 		// First callback to fire (used internally by add and fireWith)
@@ -70,8 +68,7 @@ jQuery.Callbacks = function( options ) {
 			fired = firing = true;
 			firingIndex = firingStart || 0;
 			firingStart = 0;
-			firingLength = list.length;
-			for ( ; list && firingIndex < firingLength; firingIndex++ ) {
+			for ( ; list && firingIndex < list.length; firingIndex++ ) {
 				if ( list[ firingIndex ].apply( data[ 0 ], data[ 1 ] ) === false &&
 					options.stopOnFalse ) {
 
@@ -115,13 +112,10 @@ jQuery.Callbacks = function( options ) {
 							}
 						});
 					})( arguments );
-					// Do we need to add the callbacks to the
-					// current firing batch?
-					if ( firing ) {
-						firingLength = list.length;
+
 					// With memory, if we're not firing then
 					// we should call right away
-					} else if ( memory ) {
+					if ( !firing && memory ) {
 						firingStart = start;
 						fire( memory );
 					}
@@ -135,14 +129,10 @@ jQuery.Callbacks = function( options ) {
 					var index;
 					while ( ( index = jQuery.inArray( arg, list, index ) ) > -1 ) {
 						list.splice( index, 1 );
+
 						// Handle firing indexes
-						if ( firing ) {
-							if ( index <= firingLength ) {
-								firingLength--;
-							}
-							if ( index <= firingIndex ) {
-								firingIndex--;
-							}
+						if ( firing && index <= firingIndex ) {
+							firingIndex--;
 						}
 					}
 				});
@@ -159,10 +149,7 @@ jQuery.Callbacks = function( options ) {
 
 			// Remove all callbacks from the list
 			empty: function() {
-				if ( list ) {
-					list = [];
-					firingLength = 0;
-				}
+				list = list && [];
 				return this;
 			},
 
